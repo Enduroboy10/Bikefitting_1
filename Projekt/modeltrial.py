@@ -18,10 +18,10 @@ def show_image(image_path):
     plt.show()
 
 # Function to calculate angle between three points
-def calculate_angle(hufte, knie, knochel):
+def calculate_angle(p1, p2, p3):
     # Vectors
-    v1 = np.array([knie[0] - hufte[0], knie[1] - hufte[1]])
-    v2 = np.array([knochel[0] - knie[0], knochel[1] - knie[1]])
+    v1 = np.array([p1[0] - p2[0], p1[1] - p2[1]])
+    v2 = np.array([p3[0] - p2[0], p3[1] - p2[1]])
     
     # Dot product and magnitudes
     dot_product = np.dot(v1, v2)
@@ -60,46 +60,44 @@ def show_inference_result_with_keypoints(inference_response, image_path):
         knochel = keypoints_dict['knochel']
         fus = keypoints_dict['fus']
         
-        # Calculate knee angle
-        knee_angle, knee_angle_rad = calculate_angle(hufte, knie, knochel)
-        print(f"Knee angle: {knee_angle:.2f} degrees")
+        # Calculate the adjusted knee angle
+        flexion_angle = calculate_angle(knochel, knie, hufte)[0]
+        adjusted_angle = 180 - flexion_angle
+        print(f"Adjusted knee angle: {adjusted_angle:.2f} degrees")
         
-        # Plot lines between keypoints
+        # Plot solid lines between keypoints
         plt.plot([hufte[0], knie[0]], [hufte[1], knie[1]], color='black', linewidth=2)
         plt.plot([knie[0], knochel[0]], [knie[1], knochel[1]], color='black', linewidth=2)
         plt.plot([knochel[0], fus[0]], [knochel[1], fus[1]], color='black', linewidth=2)
         
-        # Create arc for the knee angle
-        arc_radius = 40
+        # Extend the line from hufte to knie as dashed
+        extension_factor = 0.4  # Shorten extension factor to 2/3
+        extended_hufte_x = knie[0] + extension_factor * (knie[0] - hufte[0])
+        extended_hufte_y = knie[1] + extension_factor * (knie[1] - hufte[1])
+        plt.plot([knie[0], extended_hufte_x], [knie[1], extended_hufte_y], color='black', linestyle='dashed', linewidth=1)
+        
+        # Create arc between the dashed line and knie-knochel line
+        arc_radius = 80
         arc_center = knie
-        theta1 = np.degrees(np.arctan2(knie[1] - hufte[1], knie[0] - hufte[0]))
+        theta1 = np.degrees(np.arctan2(extended_hufte_y - knie[1], extended_hufte_x - knie[0]))
         theta2 = np.degrees(np.arctan2(knochel[1] - knie[1], knochel[0] - knie[0]))
         
-        if theta2 < theta1:
-            theta2 += 360
+        if theta1 < theta2:
+            theta1 += 360
         
-        angle_points = np.linspace(theta1, theta1 + knee_angle, 100)
+        angle_points = np.linspace(theta2, theta1, 100)
         arc_x = arc_center[0] + arc_radius * np.cos(np.radians(angle_points))
         arc_y = arc_center[1] + arc_radius * np.sin(np.radians(angle_points))
         
-        plt.plot(arc_x, arc_y, color='blue', linewidth=2)  # Angle arc
+        # Plot the arc
+        plt.plot(arc_x, arc_y, color='blue', linewidth=2)
         
-        # Add arrows indicating the measured angle
-        arrow1_x = knie[0] + 30 * np.cos(np.radians(theta1))
-        arrow1_y = knie[1] + 30 * np.sin(np.radians(theta1))
-        arrow2_x = knie[0] + 30 * np.cos(np.radians(theta1 + knee_angle))
-        arrow2_y = knie[1] + 30 * np.sin(np.radians(theta1 + knee_angle))
+        # Plot the dashed line from knie to the start of the arc
+        plt.plot([knie[0], arc_x[0]], [knie[1], arc_y[0]], color='black', linestyle='dashed', linewidth=1)
         
-        plt.annotate('', xy=(arrow1_x, arrow1_y), xytext=(knie[0], knie[1]),
-                     arrowprops=dict(facecolor='black', arrowstyle='->', lw=1.5))
-        plt.annotate('', xy=(arrow2_x, arrow2_y), xytext=(knie[0], knie[1]),
-                     arrowprops=dict(facecolor='black', arrowstyle='->', lw=1.5))
-        
-        # Add label for the angle
-        label_x = arc_center[0] + (arc_radius + 10) * np.cos(np.radians(theta1 + knee_angle / 2))
-        label_y = arc_center[1] + (arc_radius + 10) * np.sin(np.radians(theta1 + knee_angle / 2))
-        plt.text(label_x, label_y, f'{knee_angle:.1f}°', fontsize=12, color='black',
-                 bbox=dict(facecolor='white', edgecolor='blue', boxstyle='round,pad=0.3'))  # Angle label
+        # Add angle label at the fixed position in the image
+        plt.text(50, 800, f'{adjusted_angle:.1f}°', fontsize=12, color='black',
+                 bbox=dict(facecolor='white', edgecolor='blue', boxstyle='round,pad=0.3'))
 
     plt.axis('off')
     plt.show()
