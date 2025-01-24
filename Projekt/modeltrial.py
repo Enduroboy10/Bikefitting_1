@@ -48,17 +48,20 @@ def show_inference_result_with_keypoints(inference_response, image_path):
         keypoints = prediction.get('keypoints', [])
         
         for point in keypoints:
-            x, y, confidence = point['x'], point['y'], point['confidence']
-            if confidence > 0.5:  # Filter out points with low confidence
-                plt.scatter(x, y, color='red', s=20, marker='o')  # Decreased size of points
-                keypoints_dict[point['class_name']] = (x, y)
+            if 'class' in point:  # Ensure 'class' exists
+                x, y, confidence = point['x'], point['y'], point['confidence']
+                if confidence > 0.5:  # Filter out points with low confidence
+                    plt.scatter(x, y, color='red', s=20, marker='o')  # Decreased size of points
+                    keypoints_dict[point['class']] = (x, y)
+            else:
+                print(f"Warning: Missing 'class' in point {point}")
     
-    # Connect keypoints (hufte -> knie -> knochel -> fus)
-    if all(k in keypoints_dict for k in ['hufte', 'knie', 'knochel', 'fus']):
-        hufte = keypoints_dict['hufte']
-        knie = keypoints_dict['knie']
-        knochel = keypoints_dict['knochel']
-        fus = keypoints_dict['fus']
+    # Connect keypoints (Hufte -> Knie -> Knochel -> Fus)
+    if all(k in keypoints_dict for k in ['Hufte', 'Knie', 'Knochel', 'Fus']):
+        hufte = keypoints_dict['Hufte']
+        knie = keypoints_dict['Knie']
+        knochel = keypoints_dict['Knochel']
+        fus = keypoints_dict['Fus']
         
         # Calculate the adjusted knee angle
         flexion_angle = calculate_angle(knochel, knie, hufte)[0]
@@ -68,7 +71,6 @@ def show_inference_result_with_keypoints(inference_response, image_path):
         # Plot solid lines between keypoints
         plt.plot([hufte[0], knie[0]], [hufte[1], knie[1]], color='black', linewidth=2)
         plt.plot([knie[0], knochel[0]], [knie[1], knochel[1]], color='black', linewidth=2)
-        plt.plot([knochel[0], fus[0]], [knochel[1], fus[1]], color='black', linewidth=2)
         
         # Extend the line from hufte to knie as dashed
         extension_factor = 0.4  # Shorten extension factor to 2/3
@@ -77,7 +79,7 @@ def show_inference_result_with_keypoints(inference_response, image_path):
         plt.plot([knie[0], extended_hufte_x], [knie[1], extended_hufte_y], color='black', linestyle='dashed', linewidth=1)
         
         # Create arc between the dashed line and knie-knochel line
-        arc_radius = 80
+        arc_radius = 40
         arc_center = knie
         theta1 = np.degrees(np.arctan2(extended_hufte_y - knie[1], extended_hufte_x - knie[0]))
         theta2 = np.degrees(np.arctan2(knochel[1] - knie[1], knochel[0] - knie[0]))
@@ -96,7 +98,9 @@ def show_inference_result_with_keypoints(inference_response, image_path):
         plt.plot([knie[0], arc_x[0]], [knie[1], arc_y[0]], color='black', linestyle='dashed', linewidth=1)
         
         # Add angle label at the fixed position in the image
-        plt.text(50, 800, f'{adjusted_angle:.1f}°', fontsize=12, color='black',
+        label_x = knie[0] + 20
+        label_y = knie[1] - 20
+        plt.text(label_x, label_y, f'{adjusted_angle:.1f}°', fontsize=12, color='black',
                  bbox=dict(facecolor='white', edgecolor='blue', boxstyle='round,pad=0.3'))
 
     plt.axis('off')
@@ -105,7 +109,7 @@ def show_inference_result_with_keypoints(inference_response, image_path):
 # Create an inference client
 CLIENT = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key="ypbzOm53pf6plfZ7C8a0"
+    api_key="mrzTH1atJSeLm8Sxk1WS"
 )
 
 # Display the original image before inference
@@ -116,7 +120,7 @@ show_image(image_path)
 image_base64 = image_to_base64(image_path)
 response = CLIENT.infer(
     image_base64, 
-    model_id="bikefitting/1"
+    model_id="bike_3/1"
 )
 
 print(response)
