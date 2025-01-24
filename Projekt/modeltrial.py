@@ -113,7 +113,7 @@ CLIENT = InferenceHTTPClient(
 )
 
 # Display the original image before inference
-image_path = "c:/Users/nmuig/Documents/Uni/Project/Projekt_1/Projekt/frame_absolute_highest_22.jpg"
+image_path = "c:/Users/nmuig/Documents/Uni/Project/Projekt_1/Projekt/frame_absolute_highest_43.jpg"
 show_image(image_path)
 
 # Convert image to base64 and run inference
